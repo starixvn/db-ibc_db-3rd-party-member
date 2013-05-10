@@ -57,7 +57,7 @@ Begin DataProject = "Integration"
          Script = "TP_Game_UserBet_WinLossBySite.sql"
       End
       Begin Folder = "Setting"
-         Begin Folder = "|?InsertUpdate|200c0049006e0073006500720074005500700064006100740065"
+         Begin Folder = "Insert"
             Script = "UP_User_CustGameKind_GetPositionTaking.sql"
             Script = "UP_User_CustGameKind_ReCalAllDownLine.sql"
             Script = "UP_User_CustGameType_GetPositionTaking.sql"
