@@ -1,33 +1,31 @@
-﻿ ALTER PROCEDURE [dbo].[Dot_Casino_DailySettlement] 
-	@custid				int,  	
-------------------------Casino
-	@CS_Turnover			money = 0,
-	@CS_Winlost				money = 0,
-	@CS_swinlost			money = 0,
-	@CS_mwinlost			money = 0,
-	@CS_awinlost			money = 0,
-	@CS_scomm				money = 0,
-	@CS_mcomm				money = 0,
-	@CS_acomm				money = 0,
-	@CS_playercomm			money = 0,
-	@CS_pendingAmount		money = 0,
-	@CS_sposition			smallmoney = 0,
-	@CS_mposition			smallmoney = 0,
-	@CS_aposition			smallmoney = 0,
-------------------------P2P
-	@P2P_Turnover			money = 0,
-	@P2P_Winlost			money = 0,
-	@P2P_scomm				money = 0,
-	@P2P_mcomm				money = 0,
-	@P2P_acomm				money = 0,
-	@P2P_pendingAmount		money = 0,	
-	
-	@refno				bigint,	
-	@sessionId			bigint = 0,
-	@transdesc			nvarchar(300)='',	
-	@ip					nvarchar(15)='',
-	@ErrCode			int = 0 OUTPUT,
-	@ErrMsg				nvarchar(200) = '' OUTPUT
+﻿ALTER PROCEDURE [dbo].[Dot_Casino_DailySettlement]
+	@custid [int],
+	@CS_Turnover [money] = 0,
+	@CS_Winlost [money] = 0,
+	@CS_swinlost [money] = 0,
+	@CS_mwinlost [money] = 0,
+	@CS_awinlost [money] = 0,
+	@CS_scomm [money] = 0,
+	@CS_mcomm [money] = 0,
+	@CS_acomm [money] = 0,
+	@CS_playercomm [money] = 0,
+	@CS_pendingAmount [money] = 0,
+	@CS_sposition [smallmoney] = 0,
+	@CS_mposition [smallmoney] = 0,
+	@CS_aposition [smallmoney] = 0,
+	@P2P_Turnover [money] = 0,
+	@P2P_Winlost [money] = 0,
+	@P2P_scomm [money] = 0,
+	@P2P_mcomm [money] = 0,
+	@P2P_acomm [money] = 0,
+	@P2P_pendingAmount [money] = 0,
+	@refno [bigint],
+	@sessionId [bigint] = 0,
+	@transdesc [nvarchar](300) = '',
+	@ip [nvarchar](15) = '',
+	@ErrCode [int] = 0 OUTPUT,
+	@ErrMsg [nvarchar](200) = '' OUTPUT
+WITH EXECUTE AS CALLER
 AS
 /*
 Creator : Amy
@@ -93,7 +91,7 @@ DECLARE	@roleid				tinyint,
 --		@bf_p2p_pending		money,
 		@at_transfer		money,
 		@bf_transfer		money
-		
+--- 20130705@Kathy: Update matchid for RnG Casino		
 
 SELECT  @ErrCode = 0, @ErrMsg = '' 
 
@@ -176,7 +174,7 @@ BEGIN
 	 apositiontaking, mpositiontaking, spositiontaking, tpositiontaking, currency, actualrate, currencyName, 
 	 ruben, status,statusID,ip,betid)
 	VALUES 
-	(@CustID, @username, @refno, @transdate, 0, 71, @transdesc, @cs_Winlost, @cs_Turnover, @cs_Turnover,
+	(@CustID, @username, @refno, @transdate, 71, 71, @transdesc, @cs_Winlost, @cs_Turnover, @cs_Turnover,
 	 @cs_awinlost, @cs_mwinlost, @cs_swinlost, @cs_playercomm, @cs_acomm, @cs_mcomm, @cs_scomm, @winlostdate, 
 	 @CustID, @Recommend, @MRecommend, @SRecommend, 0, 0, 0, 0, @CS_aposition, @CS_mposition, @CS_sposition, @CS_aposition +@CS_mposition + @CS_sposition, 
 	 @Currency, @actualrate, @currencyName, 1, @cs_mem_status,@cs_mem_statusID, @ip,@sessionId)
@@ -232,7 +230,7 @@ BEGIN
 	IF @@ERROR <> 0
 	BEGIN			
 		SELECT @ErrMsg = 'Insert transaction failed.', @ErrCode = 107	
-		DELETE FROM bettrans WHERE custid = @custid and refNo = @refno AND bettype in (71) and matchid = 0
+		DELETE FROM bettrans WHERE custid = @custid and refNo = @refno AND bettype in (71) and matchid IN (0, 71)
 		RETURN
 	END	
 END
@@ -273,7 +271,7 @@ BEGIN
 		 apositiontaking, mpositiontaking, spositiontaking, tpositiontaking,
 		 currency, actualrate, currencyName, ruben, status,statusID,ip,betid)
 	VALUES 
-		(@dummy_custID, @dummy_username, @refno, @transdate, 0, 71, @transdesc, @cs_Turnover, @cs_Winlost,@cs_Winlost,
+		(@dummy_custID, @dummy_username, @refno, @transdate, 71, 71, @transdesc, @cs_Turnover, @cs_Winlost,@cs_Winlost,
 		 -@cs_awinlost, -@cs_mwinlost, -@cs_swinlost, -@cs_playercomm, -@cs_acomm, -@cs_mcomm, -@cs_scomm, @winlostdate, @dummy_custID, 
 		 @dummy_recommend, @dummy_mrecommend, @dummy_srecommend, 0, 0, 0, 0, 0, 0, 0, 0, 
 		 @Currency, @actualrate, @currencyName, 1, 'DONE',121, @ip,@sessionId)
@@ -281,7 +279,7 @@ BEGIN
 	IF @@ERROR <> 0
 	BEGIN			
 		SELECT @ErrMsg = 'Insert transaction failed.', @ErrCode = 107	
-		DELETE FROM bettrans WHERE refNo = @refno AND bettype in (71,23002) and matchid = 0
+		DELETE FROM bettrans WHERE refNo = @refno AND bettype in (71,23002) and matchid IN (0, 71)
 		RETURN
 	END
 END
@@ -330,7 +328,7 @@ IF @@ERROR <> 0
 BEGIN			
 	SELECT @ErrMsg = 'Update transaction failed.', @ErrCode = 108	
 	--delete all trans of current session
-	DELETE FROM bettrans WHERE refNo = @refno AND bettype in (71,23002) and matchid = 0
+	DELETE FROM bettrans WHERE refNo = @refno AND bettype in (71,23002) and matchid IN (0, 71)
 	RETURN
 END
 
@@ -357,7 +355,7 @@ BEGIN
 		UPDATE bettrans WITH (ROWLOCK, UPDLOCK) SET status = 'running',statusID=0, ruben = 0, winlost = 0 
 		WHERE refno = @refno and bettype = 23001 and ruben = 1 and matchid = 0 
 		--delete all trans of current session
-		DELETE FROM bettrans WHERE refNo = @refno AND bettype in (71,23002) and matchid = 0
+		DELETE FROM bettrans WHERE refNo = @refno AND bettype in (71,23002) and matchid IN (0, 71)
 		RETURN
 	END
 END
@@ -437,6 +435,8 @@ END TRY
 BEGIN CATCH
 	-- if write log error: not return error code
 END CATCH
+
+
 
 
 GO
