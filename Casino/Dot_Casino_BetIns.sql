@@ -443,3 +443,10 @@ BEGIN CATCH
  -- if write log error: not return error code  
 END CATCH
 
+
+GO
+GRANT EXECUTE ON [dbo].[Dot_Casino_BetIns] TO [Dot_Casino] AS [dbo]
+GO
+GRANT EXECUTE ON [dbo].[Dot_Casino_BetIns] TO [Dot_Member] AS [dbo]
+GO
+GRANT VIEW DEFINITION ON [dbo].[Dot_Casino_BetIns] TO [vnteam] AS [dbo]
