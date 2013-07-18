@@ -36,6 +36,7 @@ History:
 	- 20120521@Lukas: modify SP to calculate adjusment amounts correctly
 	- 20120523@Lukas: including update dummy balance transaction in bettrans2
 	- 20120927@Elodie: No need to add dummy transaction into bettrans and backup table (bettrans2)
+	- 20130704Kathy: Update matchid for RnG Casino (71)
 Param's Explanation:
 
 • @ErrCode:
@@ -48,9 +49,9 @@ Param's Explanation:
 SET NOCOUNT ON
 
 --Check exists bettrans14
-IF EXISTS(SELECT 1 FROM dbo.bettrans14 (NOLOCK) WHERE refno = @refno AND bettype IN (71,72) AND matchid = 0 AND custid = @CustID)
+IF EXISTS(SELECT 1 FROM dbo.bettrans14 (NOLOCK) WHERE refno = @refno AND bettype IN (71,72) AND matchid IN (0, 71) AND custid = @CustID)
 BEGIN
-    IF Exists(SELECT 1 FROM dbo.bettrans (NOLOCK) WHERE refno = @refno AND bettype IN (71,72) AND matchid = 0 AND custid = @CustID)
+    IF Exists(SELECT 1 FROM dbo.bettrans (NOLOCK) WHERE refno = @refno AND bettype IN (71,72) AND matchid IN (0, 71) AND custid = @CustID)
     BEGIN
         SELECT @ErrCode = 108, @ErrMsg = 'Existing transactions in both bettrans and bettrans14!'
         SELECT @ErrCode AS ErrCode, @ErrMsg AS ErrMsg
@@ -71,7 +72,7 @@ BEGIN
         @CS_playercomm = @CS_playercomm - playercomm,
         @transdesc = transdesc + 'Correction - ' + CAST(@username AS VARCHAR(30)) + ' transfer Credit back to Sportsbook.'
     FROM dbo.bettrans14 (NOLOCK)
-    WHERE refno = @refno AND bettype IN (71,72) AND matchid = 0 AND custid = @CustID
+    WHERE refno = @refno AND bettype IN (71,72) AND matchid IN (0, 71) AND custid = @CustID
    
     --Call sp insert ticket(correct data)
         EXEC dbo.DOT_Casino_BetIns_Adjustment
@@ -98,7 +99,7 @@ BEGIN
 
     RETURN
 END--Check exists bettraNS
-ELSE IF EXISTS(SELECT 1 FROM dbo.bettrans(NOLOCK) WHERE refno = @refno AND bettype IN (71,72) AND matchid = 0 AND custid = @custid)
+ELSE IF EXISTS(SELECT 1 FROM dbo.bettrans(NOLOCK) WHERE refno = @refno AND bettype IN (71,72) AND matchid IN (0, 71) AND custid = @custid)
 BEGIN
     CREATE TABLE #tmp_casino(
         [sessionID] [INT] NULL,
@@ -163,7 +164,7 @@ BEGIN
 	--Get data before update
 	SELECT	@bf_balance =  SUM (b.winlost - b.actual_stake + b.playercomm) 
 	FROM	dbo.bettrans b WITH (NOLOCK)
-	WHERE	b.refno =@refno AND b.matchid = 0 AND b.bettype IN (71,72) AND b.CustID = @CustID     
+	WHERE	b.refno =@refno AND b.matchid IN (0, 71) AND b.bettype IN (71,72) AND b.CustID = @CustID     
 
 	
 	---get data after update
@@ -171,7 +172,7 @@ BEGIN
 						   - CASE WHEN b.custid = cs.[ibccustid] THEN cs.turnover ELSE cs.winlost END
 						   + (CASE WHEN b.custid = cs.[ibccustid] THEN 1 ELSE -1 END) * cs.playercomm )
 	 FROM dbo.bettrans b WITH (NOLOCK)
-        INNER JOIN #tmp_casino cs WITH (NOLOCK) ON b.refno = cs.refno AND b.matchid = 0 AND b.bettype IN (71,72) and b.custid = @custid
+        INNER JOIN #tmp_casino cs WITH (NOLOCK) ON b.refno = cs.refno AND b.matchid IN (0, 71) AND b.bettype IN (71,72) and b.custid = @custid
 		
 	---update debit balance
 	SELECT @balance = @bf_balance - @at_balance
@@ -209,7 +210,7 @@ BEGIN
         tpositiontaking = (CASE WHEN b.custid = cs.[ibccustid] THEN 1 ELSE 0 END) * cs.tposition    
         
     FROM dbo.bettrans b WITH(ROWLOCK,UPDLOCK)
-        INNER JOIN #tmp_casino (NOLOCK) cs ON b.refno = cs.refno AND b.matchid = 0 AND b.bettype IN (71,72)
+        INNER JOIN #tmp_casino (NOLOCK) cs ON b.refno = cs.refno AND b.matchid IN (0, 71) AND b.bettype IN (71,72)
         
     IF @@ERROR <> 0
     BEGIN

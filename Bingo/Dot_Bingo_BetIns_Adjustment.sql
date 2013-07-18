@@ -34,6 +34,7 @@ Revisions:
 	- 20120412@Sophia: Revise update balance
 	- 20120523@Lukas: from 2012-06-01 insert dummy balance transaction into bettrans2 instead of bettrans
 	- 20120927@Elodie: No need to add dummy transaction into bettrans and backup table (bettrans2)
+	- 20130704@Kathy: Update matchid for Bingo (73) 
 Param's Explanation:
 
 • Full structure of Dummy accounts:
@@ -165,7 +166,7 @@ BEGIN
 	 apositiontaking, mpositiontaking, spositiontaking, tpositiontaking, currency, actualrate, currencyName, 
 	 ruben, status,statusID,ip,betid)
 	VALUES 
-	(@CustID, @username, @refno, @transdate, 0, 73, @transdesc, @BI_Winlost, @BI_Turnover, @BI_Turnover,
+	(@CustID, @username, @refno, @transdate, 73, 73, @transdesc, @BI_Winlost, @BI_Turnover, @BI_Turnover,
 	 @BI_awinlost, @BI_mwinlost, @BI_swinlost, @BI_playercomm, @BI_acomm, @BI_mcomm, @BI_scomm, @winlostdate, 
 	 @CustID, @Recommend, @MRecommend, @SRecommend, 0, 0, 0, 0, @BI_aposition, @BI_mposition, @BI_sposition, @BI_aposition +@BI_mposition + @BI_sposition, 
 	 @Currency, @actualrate, @currencyName, 1, @BI_mem_status,@BI_mem_statusID, @ip,@sessionId)
@@ -211,7 +212,7 @@ BEGIN
 	IF @@ERROR <> 0
 	BEGIN			
 		SELECT @ErrMsg = 'Insert transaction failed.', @ErrCode = 107	
-		DELETE FROM bettrans WHERE custid = @custid and refNo = @refno AND bettype =73 and matchid = 0
+		DELETE FROM bettrans WHERE custid = @custid and refNo = @refno AND bettype =73 and matchid in(0, 73)
 		--rollback balance
 		EXEC Dot_BalanceUpdCredit @custid = @custid, @balance = @BI_pendingAmount
 		RETURN
@@ -275,7 +276,7 @@ IF @@ERROR <> 0
 BEGIN			
 	SELECT @ErrMsg = 'Update transaction failed.', @ErrCode = 108	
 	--delete all trans of current session
-	DELETE FROM bettrans WHERE refNo = @refno AND bettype in (73,23202) and matchid = 0
+	DELETE FROM bettrans WHERE refNo = @refno AND bettype in (73,23202) and matchid in (0, 73)
 	--rollback balance
 	IF @balance > 0
 		EXEC Dot_BalanceUpdCredit @custid = @custid, @balance = @balance
@@ -308,7 +309,7 @@ BEGIN
 	UPDATE bettrans WITH (ROWLOCK, UPDLOCK) SET status = 'running',statusID=0, ruben = 0, winlost = 0 
 	WHERE refno = @refno and bettype = 23201 and ruben = 1 and matchid = 0 
 	--delete all trans of current session
-	DELETE FROM bettrans WHERE refNo = @refno AND bettype in (73,23202) and matchid = 0
+	DELETE FROM bettrans WHERE refNo = @refno AND bettype in (73,23202) and matchid in (0, 73)
 	--rollback balance
 	IF @balance > 0
 		EXEC Dot_BalanceUpdCredit @custid = @custid, @balance = @balance

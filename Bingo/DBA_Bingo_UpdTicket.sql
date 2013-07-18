@@ -30,6 +30,7 @@ History:
 	- 20120412@Sophia: Revise credit/debit balance
 	- 20120523@Lukas: including update dummy balance transaction in bettrans2
 	- 20120927@Elodie: No need to add dummy transaction into bettrans and backup table (bettrans2)
+	- 20130704@Kathy: Update matchid for Bingo (73) 
 Param's Explanation:
 
 • @ErrCode:
@@ -42,9 +43,9 @@ Param's Explanation:
 SET NOCOUNT ON
 
 --Check exists bettrans14
-IF EXISTS(SELECT 1 FROM dbo.bettrans14 (NOLOCK) WHERE refno = @refno AND bettype =73 AND matchid = 0 AND custid = @CustID)
+IF EXISTS(SELECT 1 FROM dbo.bettrans14 (NOLOCK) WHERE refno = @refno AND bettype =73 AND matchid IN (0, 73) AND custid = @CustID)
 BEGIN
-    IF Exists(SELECT 1 FROM dbo.bettrans (NOLOCK) WHERE refno = @refno AND bettype =73 AND matchid = 0 AND custid = @CustID)
+    IF Exists(SELECT 1 FROM dbo.bettrans (NOLOCK) WHERE refno = @refno AND bettype =73 AND matchid IN (0, 73) AND custid = @CustID)
     BEGIN
         SELECT @ErrCode = 108, @ErrMsg = 'Existing transactions in both bettrans and bettrans14!'
         SELECT @ErrCode AS ErrCode, @ErrMsg AS ErrMsg
@@ -65,7 +66,7 @@ BEGIN
         @BI_playercomm = playercomm - @BI_playercomm,
         @transdesc = transdesc + 'Correction - ' + CAST(@username AS VARCHAR(30)) + ' transfer Credit back to Sportsbook.'
     FROM dbo.bettrans14 (NOLOCK)
-    WHERE refno = @refno AND bettype =73 AND matchid = 0 AND custid = @CustID
+    WHERE refno = @refno AND bettype =73 AND matchid IN (0, 73) AND custid = @CustID
    
     --Call sp insert ticket(correct data)
     EXEC dbo.Dot_Bingo_BetIns_Adjustment
@@ -92,7 +93,7 @@ BEGIN
 
     RETURN
 END--Check exists bettraNS
-ELSE IF EXISTS(SELECT 1 FROM dbo.bettrans(NOLOCK) WHERE refno = @refno AND bettype =73 AND matchid = 0 AND custid = @custid)
+ELSE IF EXISTS(SELECT 1 FROM dbo.bettrans(NOLOCK) WHERE refno = @refno AND bettype =73 AND matchid IN (0, 73) AND custid = @custid)
 BEGIN
     CREATE TABLE #tmp_Bingo(
         [sessionID] [INT] NULL,
@@ -142,7 +143,7 @@ BEGIN
 	--Get data before update 
 	SELECT  @bf_balance = SUM (b.winlost - b.actual_stake + b.playercomm)
 	FROM	dbo.bettrans b WITH (NOLOCK)
-	WHERE	b.refno =@refno AND b.matchid = 0 AND b.bettype =73 AND b.CustID = @CustID
+	WHERE	b.refno =@refno AND b.matchid IN (0, 73) AND b.bettype =73 AND b.CustID = @CustID
 		
 	---get data after update
 	SELECT	@at_balance =  SUM ( CASE WHEN b.custid = cs.[ibccustid] THEN cs.winlost ELSE cs.turnover END  
@@ -150,7 +151,7 @@ BEGIN
 						   + (CASE WHEN b.custid = cs.[ibccustid] THEN 1 ELSE -1 END) * cs.playercomm )
 	FROM	dbo.bettrans b WITH (NOLOCK)
 	INNER JOIN	#tmp_Bingo cs WITH (NOLOCK)  
-			ON b.refno = cs.refno AND b.matchid = 0 AND b.bettype =73 and b.custid = @custid
+			ON b.refno = cs.refno AND b.matchid IN (0, 73) AND b.bettype =73 and b.custid = @custid
 	
 	---update debit balance
 	SELECT @balance = @bf_balance - @at_balance
@@ -183,7 +184,7 @@ BEGIN
         comm = (CASE WHEN b.custid = cs.[ibccustid] THEN 1 ELSE -1 END) * cs.comm,
         playercomm = (CASE WHEN b.custid = cs.[ibccustid] THEN 1 ELSE -1 END) * cs.playercomm  
     FROM	dbo.bettrans b WITH(ROWLOCK,UPDLOCK)
-	INNER JOIN	#tmp_Bingo (NOLOCK) cs ON b.refno = cs.refno AND b.matchid = 0 AND b.bettype =73
+	INNER JOIN	#tmp_Bingo (NOLOCK) cs ON b.refno = cs.refno AND b.matchid IN(0, 73) AND b.bettype =73
 
     IF @@ERROR <> 0
 	BEGIN
