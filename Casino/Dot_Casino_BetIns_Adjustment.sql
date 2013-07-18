@@ -78,6 +78,8 @@ Param's Explanation:
 
 SET NOCOUNT ON
 
+
+
 DECLARE	@roleid				tinyint,
 		@username			varchar(30),
 		@recommend			int, 
