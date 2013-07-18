@@ -42,7 +42,7 @@ History:
 	    +check not allow to update when there is no RUNNING transfer transaction
 	    +Check the existing of dummy account..
     -20090219@PhuongDoan:
-		+Add pendingAmount
+		+Add pendingAmount      
 		+Replace @username by @custid
 		+Add @sessionId into betid field
 		+Use @refno instead of @transid
@@ -86,6 +86,7 @@ DECLARE	@roleid				tinyint,
 		@actualrate			float, 
 		@cs_mem_status		nvarchar(10),
 		@cs_mem_statusID	int,
+		
 ----20120406@Sophia: Exclude P2P in the calculation of Casino  
 --		@p2p_mem_status		nvarchar(10),
 --		@p2p_mem_statusID	int,
