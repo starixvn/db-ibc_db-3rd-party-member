@@ -1,12 +1,4 @@
-﻿USE [bodb02]
-GO
-/****** Object:  StoredProcedure [dbo].[Dot_Casino_DailySettle]    Script Date: 09/16/2013 14:38:08 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-/****** Object:  Stored Procedure dbo.Dot_Casino_DailySettle    Script Date: 5/24/2012 1:23:37 PM ******/
-ALTER PROCEDURE [dbo].[Dot_Casino_DailySettle] 
+﻿ALTER PROCEDURE [dbo].[Dot_Casino_DailySettle] 
 	@custid				int,  	
 	@transtime			datetime,
 	@betcredit			money,
@@ -54,25 +46,26 @@ History:
 	- 20120406@Sophia: Exclude P2P in the calculation of Casino 
 	- 20120412@Sophia: Revise credit/debit balance
 	- 20120522@Lukas: from 2012-06-01 insert dummy balance transaction into bettrans2 instead of bettrans
-	- 20130808@Victor(DBTrans): virtualrate change store @actualrate
-	- 20130916@Johnson: Check PT setting before insert back and remove dummy accounts tickets
-‧ Full structure of Dummy accounts:
+	- 20120927@Elodie: No need to add dummy transaction into bettrans and backup table (bettrans2)
+	- 20130705@Kathy: Update matchid from RnG Casino
+
+• Full structure of Dummy accounts:
 		--ACC Super		3rdSuperUUS		3rdSuperEURO    other currencies...
 		--ACC Master	CasUS$			CasEURO
 		--ACC Agent		CasUS$01		CasEURO01
 		--ACC Member	CasBetUS$		CasBetEURO
 
-‧ @casinoTurnover: always positive 
-‧ @casinoWinlost: casinoWinlost = casinoTurnover + member's winlost 
-‧ @ErrCode:
+• @casinoTurnover: always positive 
+• @casinoWinlost: casinoWinlost = casinoTurnover + member's winlost 
+• @ErrCode:
 	= 0: Transaction recorded successfully.
 	101 ~ 199: Specific Error for the phase of transfer from Casino to IBC.
 	>200: Specific Error for the phase of transfer from IBC to Casino.
-‧ @ErrMsg: Error description.
-‧ @transtime: time of current session ending
-‧ @betcredit: current betcredit in casino
-‧ @sessionId: current session id
-‧ @newSessionId: new id for new session
+• @ErrMsg: Error description.
+• @transtime: time of current session ending
+• @betcredit: current betcredit in casino
+• @sessionId: current session id
+• @newSessionId: new id for new session
 */
 
 SET NOCOUNT ON
@@ -83,13 +76,6 @@ IF @cs_Turnover < 0 OR @cs_Winlost < 0 ---or @p2p_Turnover < 0 OR @p2p_Winlost <
 BEGIN
 	SELECT @ErrMsg = 'Sorry, amount is invalid.', @ErrCode = 101	
 	RETURN		
-END
-
-IF @CS_aposition < 0 OR @CS_mposition < 0 OR @CS_sposition < 0
-	OR @CS_aposition >= 1 OR @CS_aposition + @CS_mposition >=1 OR @CS_aposition + @CS_mposition + @CS_sposition >=1 
-BEGIN
-	SELECT @ErrMsg = 'Sorry, PT setting is invalid.', @ErrCode = 201	
-	RETURN	
 END
 /*
 IF @cs_Turnover = 0 and @cs_Winlost = 0 and @p2p_Turnover = 0 and @p2p_Winlost = 0
@@ -113,11 +99,12 @@ DECLARE	@roleid				tinyint,
 		@currencyName		nvarchar(5), 
 		@transdate			datetime, 
 		@winlostdate		datetime,
-		@dummy_username		nvarchar(15),
-		@dummy_custid		int,
-		@dummy_recommend	int,
-		@dummy_mrecommend	int,
-		@dummy_srecommend	int,
+-- 20120927@Elodie: No need to add dummy transaction into bettrans and backup table (bettrans2)
+		--@dummy_username		nvarchar(15),
+		--@dummy_custid		int,
+		--@dummy_recommend	int,
+		--@dummy_mrecommend	int,
+		--@dummy_srecommend	int,
 		@balance			money,
 		@balance_ABS		money
 		
@@ -173,10 +160,8 @@ SELECT @p2p_mem_statusID = CASE WHEN @p2p_Winlost > @p2p_Turnover THEN 112
 						  WHEN @p2p_Winlost < @p2p_Turnover THEN 113
 						  ELSE 111 END 	
 */					  
-
---20130916@Johnson: remove dummy account tickets
-/*
-SELECT	@dummy_custid = c.custid,
+-- 20120927@Elodie: No need to add dummy transaction into bettrans and backup table (bettrans2)
+/*SELECT	@dummy_custid = c.custid,
 		@dummy_username = c.username,
 		@dummy_recommend = c.recommend,
 		@dummy_mrecommend = c.mrecommend,
@@ -190,7 +175,6 @@ BEGIN
 	RETURN
 END
 */
-
 ------------------Insert trans into DB---------------------------------------------------------------
 SELECT	@transdesc = 'Casino Betting' + CASE WHEN @transdesc <> '' THEN ' - ' + @transdesc ELSE '' END
 
@@ -211,13 +195,13 @@ BEGIN
 	(custid, username, refno, transdate, matchid, bettype, transdesc, winlost, stake, actual_stake, 
 	 awinlost, mwinlost, swinlost, playercomm, comm, acomm, scomm, winlostdate, creator, 
 	 recommend, mrecommend, srecommend, playerdiscount, discount, adiscount, sdiscount, 
-	 apositiontaking, mpositiontaking, spositiontaking, tpositiontaking, currency, actualrate,virtualrate, currencyName, 
+	 apositiontaking, mpositiontaking, spositiontaking, tpositiontaking, currency, actualrate, currencyName, 
 	 ruben, status,statusID,ip,betid)
 	VALUES 
-	(@CustID, @username, @refno, @transdate, 0, 71, @transdesc, @cs_Winlost, @cs_Turnover, @cs_Turnover,
+	(@CustID, @username, @refno, @transdate, 71, 71, @transdesc, @cs_Winlost, @cs_Turnover, @cs_Turnover,
 	 @cs_awinlost, @cs_mwinlost, @cs_swinlost, @cs_playercomm, @cs_acomm, @cs_mcomm, @cs_scomm, @winlostdate, 
 	 @CustID, @Recommend, @MRecommend, @SRecommend, 0, 0, 0, 0, @CS_aposition, @CS_mposition, @CS_sposition, @CS_aposition +@CS_mposition + @CS_sposition, 
-	 @Currency, @actualrate,@actualrate, @currencyName, 1, @cs_mem_status,@cs_mem_statusID, @ip,@sessionId)
+	 @Currency, @actualrate, @currencyName, 1, @cs_mem_status,@cs_mem_statusID, @ip,@sessionId)
 
 	IF @@ERROR <> 0
 	BEGIN			
@@ -286,7 +270,7 @@ BEGIN
 	IF @@ERROR <> 0
 	BEGIN			
 		SELECT @ErrMsg = 'Insert transaction failed.', @ErrCode = 107	
-		DELETE FROM bettrans WHERE custid = @custid and refNo = @refno AND bettype in (71) and matchid = 0
+		DELETE FROM bettrans WHERE custid = @custid and refNo = @refno AND bettype in (71) and matchid IN (0, 71)
 		--rollback balance
 		EXEC Dot_BalanceUpdCredit @custid = @custid, @balance = @cs_pendingAmount
 		RETURN
@@ -318,9 +302,7 @@ BEGIN
 	END	
 END
 */
-
-
---20130916@Johnson: remove dummy account tickets
+---- 20120927@Elodie: No need to add dummy transaction into bettrans and backup table (bettrans2)
 /*
 IF (@CS_Turnover > 0 or @CS_Winlost > 0)
 BEGIN
@@ -332,12 +314,12 @@ BEGIN
 			 awinlost, mwinlost, swinlost, playercomm, comm, acomm, scomm, winlostdate, creator, 
 			 recommend, mrecommend, srecommend, playerdiscount, discount, adiscount, sdiscount, 
 			 apositiontaking, mpositiontaking, spositiontaking, tpositiontaking,
-			 currency, actualrate,virtualrate, currencyName, ruben, status,statusID,ip,betid)
+			 currency, actualrate, currencyName, ruben, status,statusID,ip,betid)
 		VALUES 
 			(@dummy_custID, @dummy_username, @refno, @transdate, 0, 71, @transdesc, @cs_Turnover, @cs_Winlost,@cs_Winlost,
 			 -@cs_awinlost, -@cs_mwinlost, -@cs_swinlost, -@cs_playercomm, -@cs_acomm, -@cs_mcomm, -@cs_scomm, @winlostdate, @dummy_custID, 
 			 @dummy_recommend, @dummy_mrecommend, @dummy_srecommend, 0, 0, 0, 0, 0, 0, 0, 0, 
-			 @Currency, @actualrate,@actualrate, @currencyName, 1, 'DONE',121, @ip,@sessionId)
+			 @Currency, @actualrate, @currencyName, 1, 'DONE',121, @ip,@sessionId)
 
 		IF @@ERROR <> 0
 		BEGIN			
@@ -353,17 +335,16 @@ BEGIN
 		 awinlost, mwinlost, swinlost, playercomm, comm, acomm, scomm, winlostdate, creator, 
 		 recommend, mrecommend, srecommend, playerdiscount, discount, adiscount, sdiscount, 
 		 apositiontaking, mpositiontaking, spositiontaking, tpositiontaking,
-		 currency, actualrate,virtualrate, currencyName, ruben, status,statusID,ip,betid)
+		 currency, actualrate, currencyName, ruben, status,statusID,ip,betid)
 	VALUES 
 		(@dummy_custID, @dummy_username, @refno, @transdate, 0, 71, @transdesc, @cs_Turnover, @cs_Winlost,@cs_Winlost,
 		 -@cs_awinlost, -@cs_mwinlost, -@cs_swinlost, -@cs_playercomm, -@cs_acomm, -@cs_mcomm, -@cs_scomm, @winlostdate, @dummy_custID, 
 		 @dummy_recommend, @dummy_mrecommend, @dummy_srecommend, 0, 0, 0, 0, 0, 0, 0, 0, 
-		 @Currency, @actualrate,@actualrate, @currencyName, 1, 'DONE',121, @ip,@sessionId)
+		 @Currency, @actualrate, @currencyName, 1, 'DONE',121, @ip,@sessionId)
 
 	
 END
 */
-
 ---- 20120406@Sophia: Exclude P2P in the calculation of Casino  
 /*
 IF (@P2P_Turnover > 0 or @P2P_Winlost > 0)
@@ -408,7 +389,7 @@ IF @@ERROR <> 0
 BEGIN			
 	SELECT @ErrMsg = 'Update transaction failed.', @ErrCode = 108	
 	--delete all trans of current session
-	DELETE FROM bettrans WHERE refNo = @refno AND bettype in (71,23002) and matchid = 0
+	DELETE FROM bettrans WHERE refNo = @refno AND bettype in (71,23002) and matchid IN (0, 71)
 	--rollback balance
 	IF @balance > 0
 		EXEC Dot_BalanceUpdCredit @custid = @custid, @balance = @balance
@@ -441,7 +422,7 @@ BEGIN
 	UPDATE bettrans SET status = 'running',statusID=0, ruben = 0, winlost = 0 
 	WHERE refno = @refno and bettype = 23001 and ruben = 1  
 	--delete all trans of current session
-	DELETE FROM bettrans WHERE refNo = @refno AND bettype in (71,23002) and matchid = 0
+	DELETE FROM bettrans WHERE refNo = @refno AND bettype in (71,23002) and matchid IN (0, 71)
 	--rollback balance
 	IF @balance > 0
 		EXEC Dot_BalanceUpdCredit @custid = @custid, @balance = @balance
@@ -496,7 +477,7 @@ SELECT @LogData = 'Casino Betting custid = ' + convert(nvarchar(20), @custid) + 
 					 + case when @cs_pendingAmount > 0 then ', casinoPendingAmount = '+ convert(nvarchar(30),@cs_pendingAmount) else '' end
 					 ---- + case when @p2p_pendingAmount > 0 then ', P2PPendingAmount = '+ convert(nvarchar(30),@p2p_pendingAmount) else '' end ---- 20120406@Sophia: Exclude P2P in the calculation of Casino  
 					 + ', refNo = ' + convert(nvarchar(20),@refno)  +', currency = ' + convert(nvarchar(10),@currency) 
-					 + ', CasinoPlayercomm = ' + convert(nvarchar(10),@cs_playercomm) --+ ', IP = '+ @ip 
+					 + ', CasinoPlayercomm = ' + convert(nvarchar(10),@cs_playercomm) + ', IP = '+ @ip 
 BEGIN TRY
 	EXEC dbo.WriteLog_UserLog @UserID = @custid, @Doing = @LogData
 END TRY
@@ -520,9 +501,11 @@ if @ErrCode <> 0
 	select @ErrCode = @ErrCode + 100
 
 
-GO
-GRANT EXECUTE ON [dbo].[Dot_Casino_DailySettle] TO [Dot_Casino]
-GO
-GRANT EXECUTE ON [dbo].[Dot_Casino_DailySettle] TO [Dot_Member]
+
 GO
 GRANT VIEW DEFINITION ON [dbo].[Dot_Casino_DailySettle] TO [vnteam]
+GO
+GRANT  EXECUTE  ON [dbo].[Dot_Casino_DailySettle]  TO [Dot_Member]
+GO
+GRANT  EXECUTE  ON [dbo].[Dot_Casino_DailySettle]  TO [Dot_Casino]
+GO
