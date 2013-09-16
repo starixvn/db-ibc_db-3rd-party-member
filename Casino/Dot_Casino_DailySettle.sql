@@ -48,6 +48,8 @@ History:
 	- 20120522@Lukas: from 2012-06-01 insert dummy balance transaction into bettrans2 instead of bettrans
 	- 20120927@Elodie: No need to add dummy transaction into bettrans and backup table (bettrans2)
 	- 20130705@Kathy: Update matchid from RnG Casino
+	- 20130808@Victor(DBTrans): virtualrate change store @actualrate
+	- 20130916@Johnson: Check PT setting before insert back and remove dummy accounts tickets
 
 • Full structure of Dummy accounts:
 		--ACC Super		3rdSuperUUS		3rdSuperEURO    other currencies...
@@ -76,6 +78,13 @@ IF @cs_Turnover < 0 OR @cs_Winlost < 0 ---or @p2p_Turnover < 0 OR @p2p_Winlost <
 BEGIN
 	SELECT @ErrMsg = 'Sorry, amount is invalid.', @ErrCode = 101	
 	RETURN		
+END
+
+IF @CS_aposition < 0 OR @CS_mposition < 0 OR @CS_sposition < 0
+	OR @CS_aposition >= 1 OR @CS_aposition + @CS_mposition >=1 OR @CS_aposition + @CS_mposition + @CS_sposition >=1 
+BEGIN
+	SELECT @ErrMsg = 'Sorry, PT setting is invalid.', @ErrCode = 201	
+	RETURN	
 END
 /*
 IF @cs_Turnover = 0 and @cs_Winlost = 0 and @p2p_Turnover = 0 and @p2p_Winlost = 0
@@ -195,13 +204,13 @@ BEGIN
 	(custid, username, refno, transdate, matchid, bettype, transdesc, winlost, stake, actual_stake, 
 	 awinlost, mwinlost, swinlost, playercomm, comm, acomm, scomm, winlostdate, creator, 
 	 recommend, mrecommend, srecommend, playerdiscount, discount, adiscount, sdiscount, 
-	 apositiontaking, mpositiontaking, spositiontaking, tpositiontaking, currency, actualrate, currencyName, 
+	 apositiontaking, mpositiontaking, spositiontaking, tpositiontaking, currency, actualrate, virtualrate, currencyName, 
 	 ruben, status,statusID,ip,betid)
 	VALUES 
 	(@CustID, @username, @refno, @transdate, 71, 71, @transdesc, @cs_Winlost, @cs_Turnover, @cs_Turnover,
 	 @cs_awinlost, @cs_mwinlost, @cs_swinlost, @cs_playercomm, @cs_acomm, @cs_mcomm, @cs_scomm, @winlostdate, 
 	 @CustID, @Recommend, @MRecommend, @SRecommend, 0, 0, 0, 0, @CS_aposition, @CS_mposition, @CS_sposition, @CS_aposition +@CS_mposition + @CS_sposition, 
-	 @Currency, @actualrate, @currencyName, 1, @cs_mem_status,@cs_mem_statusID, @ip,@sessionId)
+	 @Currency, @actualrate, @actualrate, @currencyName, 1, @cs_mem_status,@cs_mem_statusID, @ip,@sessionId)
 
 	IF @@ERROR <> 0
 	BEGIN			

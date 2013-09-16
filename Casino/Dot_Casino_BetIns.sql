@@ -56,21 +56,28 @@ AS
 		-20120412@sophia: Revise credit/debit balance for member  
 		-20120522@Lukas: from 2012-06-01 insert dummy balance transaction into bettrans2 instead of bettrans  
 		-20120927@Elodie: No need to add dummy transaction into bettrans and backup table (bettrans2)
-		-20121029@Victor:DoubleCommLosing in bettype 71 will be 0  
+		-20121029@Victor:DoubleCommLosing in bettype 71 will be 0  		
 		-20130705@Kathy: Update matchid for RnG Casino (71) 
 		-20130717@Elodie: Apply progress bonus (72) 
 						  Correct balance in case transaction is updated failed
-		
-	Param's Explanation:  	  		
+		-20130808@Victor(DBTrans): virtualrate change store @actualrate						  
+		-20130808@Amy(DBTrans):need to modify for bettype 72 when it is launched to prod						  
+		-20130913@Johnson: Check PT setting before insert back and remove dummy accounts tickets
+Param's Explanation:
 
-		• @casinoTurnover: always positive   
-		• @casinoWinlost: casinoWinlost = casinoTurnover + member's winlost   
-		• @CS_Bonus: always positive
-		• @ErrCode:  
-			= 0: Transaction recorded successfully.  
-			> 0: Specific Error.  
+‧ Full structure of Dummy accounts:
+		--ACC Super		3rdSuperUUS		3rdSuperEURO    other currencies...
+		--ACC Master	CasUS$			CasEURO
+		--ACC Agent		CasUS$01		CasEURO01
+		--ACC Member	CasBetUS$		CasBetEURO
 
-		• @ErrMsg: Error description.  
+‧ @casinoTurnover: always positive 
+‧ @casinoWinlost: casinoWinlost = casinoTurnover + member's winlost 
+‧ @ErrCode:
+	= 0: Transaction recorded successfully.
+	> 0: Specific Error.
+	
+‧ @ErrMsg: Error description.
   
 */  
   
@@ -106,6 +113,13 @@ BEGIN
 	SELECT @ErrMsg = 'Sorry, amount is invalid.', @ErrCode = 101   
 	RETURN    
 END  
+
+IF @CS_sposition < 0 OR @CS_mposition < 0 OR @CS_aposition < 0
+	OR @CS_aposition>=1 OR @CS_aposition + @CS_mposition >=1 OR  @CS_aposition + @CS_mposition + @CS_sposition >=1
+BEGIN
+	SELECT @ErrMsg = 'Sorry, PT setting is invalid.', @ErrCode = 201	
+	RETURN	
+END
   
 SELECT	@username= ci.username,  
 		@roleid = isnull(ci.roleid,0),   
@@ -189,13 +203,13 @@ BEGIN
 	(custid, username, refno, transdate, matchid, bettype, transdesc, winlost, stake, actual_stake,   
 	awinlost, mwinlost, swinlost, playercomm, comm, acomm, scomm, winlostdate, creator,   
 	recommend, mrecommend, srecommend, playerdiscount, discount, adiscount, sdiscount,   
-	apositiontaking, mpositiontaking, spositiontaking, tpositiontaking, currency, actualrate, currencyName,   
+	apositiontaking, mpositiontaking, spositiontaking, tpositiontaking, currency, actualrate, virtualrate, currencyName,   
 	ruben, status,statusID,ip,betid,comstatus)  
 	VALUES   
 	(@CustID, @username, @refno, @transdate, 71, 71, @transdesc, @cs_Winlost, @cs_Turnover, @cs_Turnover,  
 	@cs_awinlost, @cs_mwinlost, @cs_swinlost, @cs_playercomm, @cs_acomm, @cs_mcomm, @cs_scomm, @winlostdate,   
 	@CustID, @Recommend, @MRecommend, @SRecommend, 0, 0, 0, 0, @CS_aposition, @CS_mposition, @CS_sposition, @CS_aposition +@CS_mposition + @CS_sposition,   
-	@Currency, @actualrate, @currencyName, 1, @cs_mem_status,@cs_mem_statusID, @ip,@sessionId,@DoubleCommLosing)  
+	@Currency, @actualrate, @actualrate, @currencyName, 1, @cs_mem_status,@cs_mem_statusID, @ip,@sessionId,@DoubleCommLosing)  
   
 	IF @@ERROR <> 0  
 	BEGIN     
@@ -223,14 +237,14 @@ BEGIN
 		(custid, username, refno, transdate, matchid, bettype, transdesc, winlost, stake, actual_stake,   
 		awinlost, mwinlost, swinlost, playercomm, comm, acomm, scomm, winlostdate, creator,   
 		recommend, mrecommend, srecommend, playerdiscount, discount, adiscount, sdiscount,   
-		apositiontaking, mpositiontaking, spositiontaking, tpositiontaking, currency, actualrate, currencyName,   
+		apositiontaking, mpositiontaking, spositiontaking, tpositiontaking, currency, actualrate, virtualrate, currencyName,   
 		ruben, status,statusID,ip,betid,comstatus)  
 		VALUES   
 		(@CustID, @username, @refno, @transdate, 71, 72, @transdesc, @CS_Bonus, 0, 0,  
 		0, 0, 0, 0, 0, 0, 0, @winlostdate, @CustID, 
 		@Recommend, @MRecommend, @SRecommend, 0, 0, 0, 0, 
 		0, 0, 0, 0,   
-		@Currency, @actualrate, @currencyName, 
+		@Currency, @actualrate, @actualrate, @currencyName, 
 		1, 'WON',112, @ip,@sessionId,@DoubleCommLosing)  
 	  
 		IF @@ERROR <> 0  
@@ -445,8 +459,8 @@ END CATCH
 
 
 GO
-GRANT EXECUTE ON [dbo].[Dot_Casino_BetIns] TO [Dot_Casino] AS [dbo]
+GRANT EXECUTE ON [dbo].[Dot_Casino_BetIns] TO [Dot_Casino]
 GO
-GRANT EXECUTE ON [dbo].[Dot_Casino_BetIns] TO [Dot_Member] AS [dbo]
+GRANT EXECUTE ON [dbo].[Dot_Casino_BetIns] TO [Dot_Member]
 GO
-GRANT VIEW DEFINITION ON [dbo].[Dot_Casino_BetIns] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON [dbo].[Dot_Casino_BetIns] TO [vnteam]
