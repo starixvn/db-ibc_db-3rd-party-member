@@ -1,7 +1,10 @@
-﻿set ANSI_NULLS ON
-set QUOTED_IDENTIFIER ON
-go
-
+﻿USE [LiveCasinoAdmin]
+GO
+/****** Object:  StoredProcedure [dbo].[TP_Admin_StakeLevel_GetCustStakeLevelMulti]    Script Date: 06/25/2013 22:24:04 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 ALTER PROCEDURE [dbo].[TP_Admin_StakeLevel_GetCustStakeLevelMulti]
     @CustID			int = NULL,
 	@ErrCode		varchar(5)	= '' OUTPUT,	--Return ErrCode
@@ -66,7 +69,7 @@ BEGIN TRY
 
 	SELECT	@RoleID = RoleID, @SAgentID=SAgentID, @MAgentID=MAgentID, @AgentID=AgentID, @ExchangeID = ExchangeID,
 			@CasinoID = CasinoID
-	FROM	Customer with(nolock)
+	FROM	LVCustomer with(nolock)
 	WHERE	CustID = @CustID
 	IF @@ROWCOUNT = 0
 	BEGIN
@@ -85,7 +88,7 @@ BEGIN TRY
 	ELSE IF @RoleID = 4
 		SET @SCustID = @CustID
 
-	DECLARE CUR_GameType CURSOR FOR
+	DECLARE CUR_GameType CURSOR FAST_FORWARD FOR
 		SELECT	GameTypeID,GameTypeName, GameTypeName_Ct, GameTypeName_Cs, GameTypeName_Jp,
 				GameTypeName_It, GameTypeName_Th, GameTypeName_Ko, IBCBetTypeID
 		FROM	GameType 
@@ -107,7 +110,7 @@ BEGIN TRY
 		--Get Upline StakeLevelList
 		SELECT	@Super_StakeLevelList = StakeLevelList
 		FROM	dbo.CustGameType CGT with (NOLOCK)
-				INNER JOIN dbo.Customer C with (NOLOCK) ON CGT.CustID = C.CustID
+				INNER JOIN dbo.LVCustomer C with (NOLOCK) ON CGT.CustID = C.CustID
 		WHERE	C.CustID = @SCustID
 				AND (CGT.GameTypeID = @GameTypeID)
 
@@ -125,7 +128,7 @@ BEGIN TRY
 					@IBCBetTypeID IBCBetTypeID,A.StakeLevelID,A.MinLabel+'-'+A.MaxLabel StakeLevelName,CONVERT(BIT,(CASE WHEN B.StakeLevelID IS NULL THEN 0 ELSE 1 END)) IsChecked
 			FROM
 				(
-				SELECT	StakeLevelID,MinLabel,MaxLabel,MinStake 
+				SELECT	StakeLevelID,MinLabel,MaxLabel,MinStake,MaxStake 
 				FROM	dbo.StakeLevel WITH (NOLOCK) 
 				WHERE	CHARINDEX('"' + convert(varchar(20),StakeLevelID) + '"','"' + replace(@Super_StakeLevelList,',','","') + '"',0) > 0  
 				) 
@@ -136,12 +139,11 @@ BEGIN TRY
 				WHERE	 CHARINDEX('"' + convert(varchar(20),StakeLevelID) + '"','"' + replace(@Self_StakeLevelList,',','","') + '"',0) > 0  
 				) 
 				B ON A.StakeLevelID = B.StakeLevelID
-			ORDER BY A.MinStake
+			ORDER BY A.MinStake,A.MaxStake
 		END
 		ELSE
 		BEGIN
 		
-		print 'aaa'
 			INSERT INTO @temp_custgametype(GameTypeID, GameTypeName_En, GameTypeName_Ct, GameTypeName_Cs, GameTypeName_Jp,
 									GameTypeName_It, GameTypeName_Th, GameTypeName_Ko, IBCBetTypeID, StakeLevelID,StakeLevelName,IsChecked)
 			SELECT @GameTypeID as GameTypeID,@GameTypeName_En GameTypeName_En, @GameTypeName_Ct GameTypeName_Ct, @GameTypeName_Cs GameTypeName_Cs, 
@@ -149,15 +151,16 @@ BEGIN TRY
 					@IBCBetTypeID IBCBetTypeID,A.StakeLevelID,A.MinLabel+'-'+A.MaxLabel StakeLevelName,CONVERT(BIT,(CASE WHEN B.StakeLevelID IS NULL THEN 0 ELSE 1 END)) IsChecked
 			FROM
 				(
-				SELECT	StakeLevelID,MinLabel,MaxLabel,MinStake 
+				SELECT	StakeLevelID,MinLabel,MaxLabel,MinStake,MaxStake 
 				FROM	dbo.StakeLevel WITH (NOLOCK) 
 				WHERE	StakeLevelID IN (SELECT StakeLevelID 
 										FROM	(SELECT GameTemplateID 
 												FROM	dbo.GameTemplate WITH (NOLOCK) 
 												WHERE	GameTypeID = @GameTypeID
+														AND CasinoID = @CasinoID
 												) GameTemplate INNER JOIN 
 												dbo.GameStakeLevel WITH (NOLOCK) ON GameTemplate.GameTemplateID = GameStakeLevel.GameTemplateID 
-												WHERE ExchangeID = @ExchangeID
+												WHERE ExchangeID = @ExchangeID 
 										)
 				) 
 				A LEFT OUTER JOIN
@@ -167,7 +170,7 @@ BEGIN TRY
 				WHERE	CHARINDEX('"' + convert(varchar(20),StakeLevelID) + '"','"' + replace(@Self_StakeLevelList,',','","') + '"',0) > 0  
 				) 
 				B ON A.StakeLevelID = B.StakeLevelID
-			ORDER BY A.MinStake
+			ORDER BY A.MinStake,A.MaxStake
 		END
 		
 		FETCH NEXT FROM CUR_GameType Into @GameTypeID, @GameTypeName_En, @GameTypeName_Ct, @GameTypeName_Cs, 
@@ -184,4 +187,3 @@ BEGIN CATCH
 	SELECT @ErrCode = 'E0099'
 	SELECT @ErrMsg = left(Convert(varchar, ERROR_NUMBER()) + ' ' + ERROR_PROCEDURE() + ' ' + Convert(varchar, ERROR_LINE()) + ' ' + ERROR_MESSAGE(),500)
 END CATCH
-

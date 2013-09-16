@@ -1,26 +1,25 @@
-﻿ ALTER PROCEDURE [dbo].[Dot_Casino_Mini_BetIns] 
-	@custid				int,  	
-------------------------Casino Mini Games
-	@CS_Turnover			money = 0,
-	@CS_Winlost				money = 0,
-	@CS_swinlost			money = 0,
-	@CS_mwinlost			money = 0,
-	@CS_awinlost			money = 0,
-	@CS_scomm				money = 0,
-	@CS_mcomm				money = 0,
-	@CS_acomm				money = 0,
-	@CS_playercomm			money = 0,
-	@CS_pendingAmount		money = 0,
-	@CS_sposition			smallmoney = 0,
-	@CS_mposition			smallmoney = 0,
-	@CS_aposition			smallmoney = 0,
-	
-	@refno				bigint,	
-	@sessionId			bigint = 0,
-	@transdesc			nvarchar(300)='',	
-	@ip					nvarchar(15)='',
-	@ErrCode			int = 0 OUTPUT,
-	@ErrMsg				nvarchar(200) = '' OUTPUT
+﻿ALTER PROCEDURE [dbo].[Dot_Casino_Mini_BetIns]
+	@custid [int],
+	@CS_Turnover [money] = 0,
+	@CS_Winlost [money] = 0,
+	@CS_swinlost [money] = 0,
+	@CS_mwinlost [money] = 0,
+	@CS_awinlost [money] = 0,
+	@CS_scomm [money] = 0,
+	@CS_mcomm [money] = 0,
+	@CS_acomm [money] = 0,
+	@CS_playercomm [money] = 0,
+	@CS_pendingAmount [money] = 0,
+	@CS_sposition [smallmoney] = 0,
+	@CS_mposition [smallmoney] = 0,
+	@CS_aposition [smallmoney] = 0,
+	@refno [bigint],
+	@sessionId [bigint] = 0,
+	@transdesc [nvarchar](300) = '',
+	@ip [nvarchar](15) = '',
+	@ErrCode [int] = 0 OUTPUT,
+	@ErrMsg [nvarchar](200) = '' OUTPUT
+WITH EXECUTE AS CALLER
 AS
 /*
 Creator : Thien Pham
@@ -32,7 +31,7 @@ History:
     -20100307@Thien: 
     -20111026@Sophia: Update credit/debit balance for member
     -20120412@Sophia: Revise credit/debit balance for member
-		
+	-20130705@Kathy: Update matchid for Bingo (73)	
 Param's Explanation:
 
 • Full structure of Dummy accounts:
@@ -158,7 +157,7 @@ BEGIN
 	 apositiontaking, mpositiontaking, spositiontaking, tpositiontaking, currency, actualrate, currencyName, 
 	 ruben, status, ip, betid)
 	VALUES 
-	(@CustID, @username, @refno, @transdate, 0, 73, @transdesc, @cs_Winlost, @cs_Turnover, @cs_Turnover,
+	(@CustID, @username, @refno, @transdate, 73, 73, @transdesc, @cs_Winlost, @cs_Turnover, @cs_Turnover,
 	 @cs_awinlost, @cs_mwinlost, @cs_swinlost, @cs_playercomm, @cs_acomm, @cs_mcomm, @cs_scomm, @winlostdate, 
 	 @CustID, @Recommend, @MRecommend, @SRecommend, 0, 0, 0, 0, @CS_aposition, @CS_mposition, @CS_sposition, @CS_aposition +@CS_mposition + @CS_sposition, 
 	 @Currency, @actualrate, @currencyName, 1, @cs_mem_status, @ip, @sessionId)
@@ -204,7 +203,7 @@ BEGIN
 	IF @@ERROR <> 0
 	BEGIN			
 		SELECT @ErrMsg = 'Insert transaction failed.', @ErrCode = 107	
-		DELETE FROM bettrans WHERE custid = @custid and refNo = @refno AND bettype in (73) and matchid = 0
+		DELETE FROM bettrans WHERE custid = @custid and refNo = @refno AND bettype in (73) and matchid IN (0, 73)
 		--rollback balance
 		EXEC Dot_BalanceUpdCredit @custid = @custid, @balance = @cs_pendingAmount
 		RETURN
@@ -222,7 +221,7 @@ BEGIN
 		 apositiontaking, mpositiontaking, spositiontaking, tpositiontaking,
 		 currency, actualrate, currencyName, ruben, status, ip, betid)
 	VALUES 
-		(@dummy_custID, @dummy_username, @refno, @transdate, 0, 73, @transdesc, @cs_Turnover, @cs_Winlost,@cs_Winlost,
+		(@dummy_custID, @dummy_username, @refno, @transdate, 73, 73, @transdesc, @cs_Turnover, @cs_Winlost,@cs_Winlost,
 		 -@cs_awinlost, -@cs_mwinlost, -@cs_swinlost, -@cs_playercomm, -@cs_acomm, -@cs_mcomm, -@cs_scomm, @winlostdate, @dummy_custID, 
 		 @dummy_recommend, @dummy_mrecommend, @dummy_srecommend, 0, 0, 0, 0, 0, 0, 0, 0, 
 		 @Currency, @actualrate, @currencyName, 1, 'DONE', @ip, @sessionId)
@@ -230,7 +229,7 @@ BEGIN
 	IF @@ERROR <> 0
 	BEGIN			
 		SELECT @ErrMsg = 'Insert transaction failed.', @ErrCode = 107	
-		DELETE FROM bettrans WHERE refNo = @refno AND bettype in (73,118) and matchid = 0
+		DELETE FROM bettrans WHERE refNo = @refno AND bettype in (73,118) and matchid IN (0, 73)
 		RETURN
 	END
 END
@@ -254,7 +253,7 @@ IF @@ERROR <> 0
 BEGIN			
 	SELECT @ErrMsg = 'Update transaction failed.', @ErrCode = 108	
 	--delete all trans of current session
-	DELETE FROM bettrans WHERE refNo = @refno AND bettype in (73,118) and matchid = 0
+	DELETE FROM bettrans WHERE refNo = @refno AND bettype in (73,118) and matchid IN (0, 73)
 	-- rollback balance
 	IF 	@balance > 0 
 		BEGIN 
@@ -292,7 +291,7 @@ BEGIN
 	UPDATE bettrans WITH (ROWLOCK, UPDLOCK) SET status = 'running', ruben = 0, winlost = 0 
 	WHERE refno = @refno and bettype = 117 and ruben = 1 and matchid = 0 
 	--delete all trans of current session
-	DELETE FROM bettrans WHERE refNo = @refno AND bettype in (73,118) and matchid = 0
+	DELETE FROM bettrans WHERE refNo = @refno AND bettype in (73,118) and matchid IN (0, 73)
 	-- rollback balance
 	IF @balance > 0 
 	BEGIN 
@@ -318,6 +317,7 @@ SELECT @LogData = 'Casino Mini Games Betting custid = ' + convert(nvarchar(20), 
 					 + ', CasinoPlayercomm = ' + convert(nvarchar(10),@cs_playercomm) + ', IP = '+ @ip 
 
 EXEC dbo.WriteLog_UserLog @UserID = @custid, @Doing = @LogData
+
 
 
 GO
