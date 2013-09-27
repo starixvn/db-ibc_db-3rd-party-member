@@ -62,7 +62,7 @@ AS
 						  Correct balance in case transaction is updated failed
 		-20130808@Victor(DBTrans): virtualrate change store @actualrate						  
 		-20130808@Amy(DBTrans):need to modify for bettype 72 when it is launched to prod						  
-		-20130913@Johnson: Check PT setting before insert back and remove dummy accounts tickets
+		-20130913@Johnson: Check PT setting before insert back and remove dummy accounts tickets 
 Param's Explanation:
 
 ‧ Full structure of Dummy accounts:

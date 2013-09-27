@@ -49,7 +49,7 @@ History:
 	- 20120927@Elodie: No need to add dummy transaction into bettrans and backup table (bettrans2)
 	- 20130705@Kathy: Update matchid from RnG Casino
 	- 20130808@Victor(DBTrans): virtualrate change store @actualrate
-	- 20130916@Johnson: Check PT setting before insert back and remove dummy accounts tickets
+	- 20130916@Johnson: Check PT setting before insert back and remove dummy accounts tickets 
 
 • Full structure of Dummy accounts:
 		--ACC Super		3rdSuperUUS		3rdSuperEURO    other currencies...

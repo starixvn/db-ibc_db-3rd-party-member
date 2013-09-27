@@ -38,7 +38,7 @@ Revision:
 	 - 20120523@Lukas: from 2012-06-01 insert dummy balance transaction into bettrans2 instead of bettrans  
 	 - 20130704@Kathy: Update matchid for Bingo (73)
 	 - 20130828@Victor(DBTrans): virtualrate change store @actualrate  
-	 - 20130916@Johnson: Check PT setting before insert back and remove dummy accounts tickets
+	 - 20130916@Johnson: Check PT setting before insert back and remove dummy accounts tickets 
 Param's Explanation:   
 	• Full structure of Dummy accounts:  
 	  --ACC Super  3rdSuperUUS  3rdSuperEURO    other currencies...  

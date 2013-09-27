@@ -44,7 +44,7 @@ Revisions:
 	 - 20120412@sophia: Revise credit/debit balance for member  
 	 - 20120523@Lukas: from 2012-06-01 insert dummy balance transaction into bettrans2 instead of bettrans  
 	 - 20130828@Victor(DBTrans): virtualrate change store @actualrate  
-	 - 20130913@Johnson: Check PT setting before insert back and remove dummy accounts tickets
+	 - 20130913@Johnson: Check PT setting before insert back and remove dummy accounts tickets 
 Param's Explanation:  
   
 	• Full structure of Dummy accounts:  
