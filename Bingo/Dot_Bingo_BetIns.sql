@@ -1,12 +1,4 @@
-﻿USE [bodb02]
-GO
-/****** Object:  StoredProcedure [dbo].[Dot_Bingo_BetIns_test]    Script Date: 09/16/2013 14:52:05 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-/****** Object:  Stored Procedure dbo.Dot_Bingo_BetIns    Script Date: 5/24/2012 1:23:39 PM ******/  
-ALTER PROCEDURE [dbo].[Dot_Bingo_BetIns]   
+﻿ALTER PROCEDURE [dbo].[Dot_Bingo_BetIns]   
 	 @custid    int,     
 	------------------------bingo  
 	 @BI_Turnover   money = 0,  
@@ -35,7 +27,7 @@ AS
 Creator : Jamie  
 Date : 2010-09-11  
 Task : Insert Bingo Bet tickets  
-DB: DBTRANS.bodb02  
+DB: DBTXN/bodb02  
   
 Revisions:  
 	 - 20110513@Henry: change bettype to new range  
