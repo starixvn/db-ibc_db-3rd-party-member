@@ -10,7 +10,7 @@ AS
 /*
 Created: 20090421@PhuongDoan
 Task: Update casino status
-DB: DBTRANS.bodb02
+DB: DBCUST/CustDB
 Original:
 
 History:

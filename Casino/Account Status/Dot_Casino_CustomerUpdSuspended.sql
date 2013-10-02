@@ -1,12 +1,4 @@
-﻿ USE [bodb02]
-GO
-/****** Object:  StoredProcedure [dbo].[Dot_Casino_CustomerUpdSuspended]    Script Date: 11/23/2012 00:00:41 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-/****** Object:  Stored Procedure dbo.Dot_Casino_CustomerUpdSuspended    Script Date: 11/9/2012 1:09:09 PM ******/
- ALTER PROCEDURE [dbo].[Dot_Casino_CustomerUpdSuspended]
+﻿ALTER PROCEDURE [dbo].[Dot_Casino_CustomerUpdSuspended]
 	@CustID int,
 	@Suspended bit,
 	@CsAdminID varchar(30),
@@ -18,7 +10,7 @@ AS
 Creator : Phuong Doan
 Date : 2009-02-25
 Task : Update Suspended status
-DB: DB02.bodb02
+DB: DBCUST/CustDB
 
 History:
     - 20121026@Elodie: Modify to write log update into our Customer_Log DB instead of Userlog table.
