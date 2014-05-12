@@ -1,21 +1,17 @@
-﻿ USE [bodb02]
-GO
-/****** Object:  StoredProcedure [dbo].[Dot_Casino_CustBetCredit]    Script Date: 05/20/2011 00:15:45 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-ALTER PROCEDURE [dbo].[Dot_Casino_CustBetCredit]
+﻿ALTER PROCEDURE [dbo].[Dot_Casino_CustBetCredit_Cust]
 	@custid int
 AS
 /*
 Creator :
 Date :
 Task : Get member's bet credit for Casino site using
-DB: DB02.bodb02
+DB: DBTXN/bodb02
 
 History:
     - 20110520@Amy: Re-arrange bettype
+    - 20121106@Viet: revise SP
+    - 20131108@Elodie: Splitting bodb02 into CustDB (call CustInfo by link database)
+    - 20140510@Victor: Amend the SP to include @translogCredit (for Keno product)	
 */
 BEGIN
 	SET NOCOUNT ON;
@@ -26,28 +22,35 @@ BEGIN
 	Declare @OuSTxn money
 	Declare @CashBalance money
 	Declare @CasinoOutStanding money
+	Declare @translogCredit money
 
 	SELECT @Credit = IsNull(Credit,0)
-	FROM dbo.custinfo with (nolock)
-	WHERE custid = @custid AND roleid = 1
-
+	FROM CustDB.dbo.custinfo with (nolock)
+	WHERE custid = @custid
+	
 	IF @@ROWCOUNT > 0
 	BEGIN
+	
+		select @translogCredit = isnull(sum(isnull(actual_stake,0)) ,0)
+		from translog with (nolock) 
+		where custid=@custid and statusID=0	
+
 		SELECT 
 			@Balance = IsNull(SUM(winlost - actual_stake + playercomm),0),
-			@OuSTxn = IsNull(SUM(CASE ruben WHEN 0 THEN actual_stake ELSE 0 END),0)
-		FROM dbo.bettrans with (nolock, INDEX=IX_custid)
+			@OuSTxn = IsNull(SUM(CASE ruben WHEN 0 THEN actual_stake ELSE 0 END),0),
+			@CasinoOutStanding = IsNull(SUM(CASE WHEN ruben = 0 AND bettype = 23002 THEN actual_stake ELSE 0 END),0)
+		FROM dbo.bettrans with (nolock)
 		WHERE custid = @custid
 
-		SET @BetCredit = @Credit + @Balance
+		SET @BetCredit = @Credit + @Balance - @translogCredit
 		SET @CashBalance =  @Balance + @OuSTxn
 
-		SELECT 
-			@CasinoOutStanding = IsNull(SUM(actual_stake),0)
-		FROM dbo.bettrans with (nolock, INDEX=IX_custid)
-		WHERE custid = @custid
-		AND ruben = 0
-		AND bettype = 23002
+		--SELECT 
+		--	@CasinoOutStanding = IsNull(SUM(actual_stake),0)
+		--FROM dbo.bettrans with (nolock)
+		--WHERE custid = @custid
+		--AND ruben = 0
+		--AND bettype = 23002
 
 		SELECT @BetCredit BetCredit, @Credit GivenCredit, @CashBalance CashBalance, @CasinoOutStanding OutStanding
 	END
